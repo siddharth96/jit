@@ -1,10 +1,14 @@
 package in.siddharth.git.command;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.stream.Stream;
+
+import static in.siddharth.git.command.CommandHelpers.GIT_ROOT;
 
 public class InitCommand implements Command {
 
@@ -14,18 +18,23 @@ public class InitCommand implements Command {
         this.rootPath = rootPath;
     }
 
-    public static InitCommand buildInstance(Path path) {
-        return new InitCommand(path);
+    public static InitCommand buildInstance(String path) {
+        return new InitCommand(Paths.get(path, GIT_ROOT));
     }
 
     @Override
     public boolean run() {
-        Arrays.asList("objects", "refs").forEach(dir -> createDirectory(rootPath, dir));
+        getDirectoriesToCreate().forEach(this::createDirectory);
         return true;
     }
 
-    private void createDirectory(Path directoryParent, String innerDirectory) {
-        Path directory = Paths.get(directoryParent.toString(), innerDirectory);
+    @VisibleForTesting
+    public Stream<Path> getDirectoriesToCreate() {
+        return Stream.of("objects", "refs")
+                .map(dir -> Paths.get(rootPath.toString(), dir));
+    }
+
+    private void createDirectory(Path directory) {
         if (!Files.exists(directory)) {
             try {
                 Files.createDirectories(directory);
